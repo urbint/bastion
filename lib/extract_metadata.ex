@@ -47,9 +47,9 @@ defmodule Bastion.ExtractMetadata do
     case Keyword.fetch(private, :meta) do
       :error ->
         []
+
       {:ok, meta} ->
         meta
     end
   end
-
 end

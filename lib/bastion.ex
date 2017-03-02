@@ -7,7 +7,10 @@ defmodule Bastion do
   @type scope :: atom
   @type query :: String.t
 
+  @bastion_metadata_key :'$bastion:scopes'
+
   alias Absinthe.{Schema,Pipeline,Phase}
+
 
   @doc """
   required_scopes/2 takes an `Absinthe.Schema.t` and a Graphql query string,
@@ -33,7 +36,6 @@ defmodule Bastion do
     end
   end
 
-  @bastion_metadata_key :scopes
 
   @spec extract_scopes(Bastion.ExtractMetadata.extracted_metadata) :: [scope]
   defp extract_scopes(meta) do
@@ -41,7 +43,8 @@ defmodule Bastion do
     |> Keyword.fetch(@bastion_metadata_key)
     |> case do
       :error ->
-        nil
+        []
+
       {:ok, scopes} ->
         scopes
     end
@@ -50,9 +53,11 @@ defmodule Bastion do
 
   @spec metadata_for_requested_fields(Schema.t, query) :: {:ok, Bastion.ExtractMetadata.extracted_metadata}
   defp metadata_for_requested_fields(schema, query) do
-    pipeline = metadata_pipeline(schema)
+    pipeline =
+      metadata_pipeline(schema)
 
-    Pipeline.run(query, pipeline)
+    query
+    |> Pipeline.run(pipeline)
     |> case do
       {:ok, result, _phases} ->
         {:ok, result}
@@ -99,6 +104,17 @@ defmodule Bastion do
 
       false ->
         {:error, "Not authorized to execute query."}
+    end
+  end
+
+
+  @doc """
+  Allows a module to set scopes as a meta object on fields with no fuss.
+
+  """
+  defmacro scopes(req_scopes) do
+    quote do
+      meta :'$bastion:scopes', unquote(req_scopes)
     end
   end
 end

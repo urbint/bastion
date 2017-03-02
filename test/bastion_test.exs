@@ -2,11 +2,9 @@ defmodule BastionTest do
   use ExUnit.Case
   doctest Bastion
 
-  alias __MODULE__.TestSchema
-
   import Bastion
 
-  defmodule TestSchema do
+  defmodule BasicTestSchema do
     use Absinthe.Schema
 
     object :user do
@@ -16,8 +14,7 @@ defmodule BastionTest do
 
     query do
       field :private_users, list_of(:user) do
-        # TODO macro exposing `scopes :admin`
-        meta :scopes, :admin
+        scopes :admin
         resolve &resolver_fn/3
       end
       field :public_users, list_of(:user) do
@@ -36,7 +33,7 @@ defmodule BastionTest do
   defp assert_query_returns_data(query) do
     result =
       query
-      |> Absinthe.run(TestSchema)
+      |> Absinthe.run(BasicTestSchema)
       |> case do
         {:ok, result} ->
           result
@@ -90,8 +87,8 @@ defmodule BastionTest do
     test "returns required scopes for requested objects", %{context: context} do
       %{private_query: private_query, public_query: public_query} = context
 
-      assert required_scopes(TestSchema, private_query) == {:ok, [:admin]}
-      assert required_scopes(TestSchema, public_query) == :no_scopes_required
+      assert required_scopes(BasicTestSchema, private_query) == {:ok, [:admin]}
+      assert required_scopes(BasicTestSchema, public_query) == :no_scopes_required
     end
 
     @tag test_case: :basic
@@ -99,14 +96,14 @@ defmodule BastionTest do
       %{private_query: private_query, public_query: public_query} = context
 
       #private query
-      assert :ok = authorize(TestSchema, private_query, [:admin])
-      assert {:error, _} = authorize(TestSchema, private_query, [:user])
-      assert {:error, _} = authorize(TestSchema, private_query, [])
+      assert :ok = authorize(BasicTestSchema, private_query, [:admin])
+      assert {:error, _} = authorize(BasicTestSchema, private_query, [:user])
+      assert {:error, _} = authorize(BasicTestSchema, private_query, [])
 
       # public query
-      assert :ok = authorize(TestSchema, public_query, [:admin])
-      assert :ok = authorize(TestSchema, public_query, [:user])
-      assert :ok = authorize(TestSchema, public_query, [])
+      assert :ok = authorize(BasicTestSchema, public_query, [:admin])
+      assert :ok = authorize(BasicTestSchema, public_query, [:user])
+      assert :ok = authorize(BasicTestSchema, public_query, [])
     end
 
   end
