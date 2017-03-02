@@ -14,20 +14,31 @@ defmodule Bastion do
   and returns the scopes required to run that query.
 
   """
-  @spec required_scopes(Schema.t, query) :: [scope]
+  @spec required_scopes(Schema.t, query) :: {:ok, [scope]} | :no_scopes_required
   def required_scopes(schema, query) do
     {:ok, metadata} =
       metadata_for_requested_fields(schema, query)
 
-    metadata
-    |> Stream.flat_map(&extract_scopes/1)
-    |> Enum.uniq()
+    scopes =
+      metadata
+      |> Stream.flat_map(&extract_scopes/1)
+      |> Enum.uniq()
+
+    case scopes do
+      [] ->
+        :no_scopes_required
+
+      scopes ->
+        {:ok, scopes}
+    end
   end
+
+  @bastion_metadata_key :scopes
 
   @spec extract_scopes(Bastion.ExtractMetadata.extracted_metadata) :: [scope]
   defp extract_scopes({ _id, meta}) do
     meta
-    |> Map.get(:scopes)
+    |> Map.get(@bastion_metadata_key)
     |> List.wrap()
   end
 
@@ -64,17 +75,24 @@ defmodule Bastion do
 
   """
   @spec authorize(Schema.t, query, [scope]) :: :ok | {:error, reason :: String.t}
-  def authorize(schema, query, user_scopes) do
-    necessary_scopes =
-      required_scopes(schema, query)
-
+  def authorize(schema, query, user_scopes) when is_list(user_scopes) do
     authorized? =
-      Enum.all?(user_scopes in necessary_scopes)
+      required_scopes(schema, query)
+      |> case do
+        {:ok, scopes} ->
+          scopes
+          |> Enum.all?(&(&1 in user_scopes))
 
-    if authorized? do
-      :ok
-    else
-      {:error, "Not authorized to execute query."}
+        :no_scopes_required ->
+          true
+      end
+
+    case authorized? do
+      true ->
+        :ok
+
+      false ->
+        {:error, "Not authorized to execute query."}
     end
   end
 end

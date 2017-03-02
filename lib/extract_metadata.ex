@@ -22,7 +22,7 @@ defmodule Bastion.ExtractMetadata do
     extracted =
       blueprint
       |> parse_requested_fields()
-      |> Enum.map(&extract_meta_for_identifier(schema, &1))
+      |> Stream.map(&extract_meta_for_identifier(schema, &1))
       |> Enum.reject(&elem(&1, 1) == nil)
 
     {:ok, extracted}
