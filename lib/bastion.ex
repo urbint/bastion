@@ -7,7 +7,7 @@ defmodule Bastion do
   @type scope :: atom
   @type query :: String.t
 
-  alias Absinthe.{Schema,Blueprint,Pipeline,Adapter,Phase,Type}
+  alias Absinthe.{Schema,Pipeline,Phase}
 
   @doc """
   required_scopes/2 takes an `Absinthe.Schema.t` and a Graphql query string,
@@ -16,89 +16,44 @@ defmodule Bastion do
   """
   @spec required_scopes(Schema.t, query) :: [scope]
   def required_scopes(schema, query) do
-    {:ok, blueprint} =
-      parse_to_absinthe_blueprint(schema, query)
+    {:ok, metadata} =
+      metadata_for_requested_fields(schema, query)
 
-    blueprint
-    |> parse_requested_fields()
-    |> Stream.map(&Schema.lookup_type(schema, &1))
-    |> Stream.filter(&(&1))
-    |> Stream.map(&Type.meta(&1, :bastion))
-    |> Stream.filter(&(&1))
+    metadata
+    |> Stream.flat_map(&extract_scopes/1)
     |> Enum.uniq()
   end
 
-  @spec parse_to_absinthe_blueprint(Schema.t, query) :: Blueprint.t
-  defp parse_to_absinthe_blueprint(schema, query) do
-    pipeline = get_pipeline_for_query(schema)
-    case Pipeline.run(query, pipeline) do
+  @spec extract_scopes(Bastion.ExtractMetadata.extracted_metadata) :: [scope]
+  defp extract_scopes({ _id, meta}) do
+    meta
+    |> Map.get(:scopes)
+    |> List.wrap()
+  end
+
+  @spec metadata_for_requested_fields(Schema.t, query) :: {:ok, Bastion.ExtractMetadata.extracted_metadata}
+  defp metadata_for_requested_fields(schema, query) do
+    pipeline = metadata_pipeline(schema)
+
+    Pipeline.run(query, pipeline)
+    |> case do
       {:ok, result, _phases} ->
         {:ok, result}
-      {:error, msg, _phases} ->
-        {:error, msg}
     end
   end
 
-  defp get_pipeline_for_query(schema) do
+  @spec metadata_pipeline(Schema.t) :: Pipeline.t
+  defp metadata_pipeline(schema) do
     opts =
-      [
-        adapter: Adapter.LanguageConventions,
-        operation_name: nil,
-        variables: %{},
-        context: %{},
-        root_value: %{},
-        validation_result_phase: Phase.Document.Validation.Result,
-        result_phase: Phase.Document.Result,
-        jump_phases: true,
-        schema: schema,
-      ]
+      [schema: schema]
 
     [
       {Phase.Parse, opts},
       Phase.Blueprint,
       {Phase.Schema, opts},
+      {Bastion.ExtractMetadata, opts},
     ]
   end
-
-  @spec parse_requested_fields(Blueprint.t) :: [Blueprint.Document.Field.t]
-  defp parse_requested_fields(blueprint) do
-    blueprint.operations
-    |> collect_object_field_ids()
-  end
-
-  @spec collect_object_field_ids([Blueprint.Document.Operation.t]) :: [atom]
-  defp collect_object_field_ids(operations) do
-    do_collect_object_field_ids(operations, [])
-  end
-
-  defp do_collect_object_field_ids([], acc), do: acc
-  defp do_collect_object_field_ids([next | rest], acc) do
-    ids =
-      next.selections
-      |> Enum.flat_map(&fields_for_selections/1)
-
-    do_collect_object_field_ids(rest, ids ++ acc)
-  end
-
-  defp fields_for_selections(%Blueprint.Document.Field{schema_node: %{type: %Type.List{of_type: type}}, selections: selections}) do
-    selections
-    |> Enum.flat_map(&fields_for_selections/1)
-    |> Enum.concat([type])
-  end
-  defp fields_for_selections(%Blueprint.Document.Field{schema_node: %{__reference__: %{identifier: id}}}) when not(is_nil(id)) do
-    [id]
-  end
-
-  @spec parse_requested_scopes([Blueprint.Document.Field.t]) :: [scope]
-  defp parse_requested_scopes([field | _]) do
-    field.name
-
-
-    field.schema_node.name
-    |> String.to_existing_atom
-    |> Type.meta(:bastion)
-  end
-
 
 
   @doc """

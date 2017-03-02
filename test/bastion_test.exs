@@ -50,18 +50,17 @@ defmodule BastionTest do
     use Absinthe.Schema
 
     object :user do
-      meta :bastion, :admin
+      meta :scopes, :admin
       field :name, :string
       field :id, :integer
     end
-
 
     query do
       field :users, list_of(:user),
         resolve: &resolver_fn/3
     end
 
-    defp resolver_fn(_, _, _) do
+    defp resolver_fn(_parent, _args, _blueprint) do
       {:ok, [
         %{id: 7, name: "Luke Skywalker"},
         %{id: 999999, name: "Darth Vader"},
