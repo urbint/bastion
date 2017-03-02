@@ -10,11 +10,11 @@ use Mix.Config
 
 # You can configure for your application as:
 #
-#     config :doorman, key: :value
+#     config :bastion, key: :value
 #
 # And access this configuration in your application as:
 #
-#     Application.get_env(:doorman, :key)
+#     Application.get_env(:bastion, :key)
 #
 # Or configure a 3rd-party app:
 #

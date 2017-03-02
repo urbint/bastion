@@ -1,10 +1,10 @@
-defmodule DoormanTest do
+defmodule BastionTest do
   use ExUnit.Case
-  doctest Doorman
+  doctest Bastion
 
   alias __MODULE__.TestSchema
 
-  import Doorman
+  import Bastion
 
   describe "sanity" do
     test "TestSchema module works as expected" do
@@ -50,7 +50,7 @@ defmodule DoormanTest do
     use Absinthe.Schema
 
     object :user do
-      meta :doorman, :admin
+      meta :bastion, :admin
       field :name, :string
       field :id, :integer
     end
