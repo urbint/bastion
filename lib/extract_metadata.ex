@@ -21,56 +21,35 @@ defmodule Bastion.ExtractMetadata do
 
     extracted =
       blueprint
-      |> parse_requested_fields()
-      |> Stream.map(&extract_meta_for_identifier(schema, &1))
-      |> Enum.reject(&elem(&1, 1) == nil)
+      |> parse_selected_field_metadata()
 
     {:ok, extracted}
   end
 
-  @spec extract_meta_for_identifier(Schema.t, id) :: extracted_metadata
-  defp extract_meta_for_identifier(schema, id) do
-    meta =
-      schema
-      |> Schema.lookup_type(id)
-      |> case do
-        nil ->
-          nil
-
-        type ->
-          Type.meta(type)
-      end
-
-    {id, meta}
-  end
-
-  @spec parse_requested_fields(Blueprint.t) :: [Blueprint.Document.Field.t]
-  defp parse_requested_fields(blueprint) do
+  @spec parse_selected_field_metadata(Blueprint.t) :: [Blueprint.Document.Field.t]
+  defp parse_selected_field_metadata(blueprint) do
     blueprint.operations
-    |> collect_object_field_ids()
+    |> Stream.flat_map(&flatten_selections(&1.selections))
+    |> Enum.map(&field_to_meta/1)
   end
 
-  @spec collect_object_field_ids([Blueprint.Document.Operation.t]) :: [atom]
-  defp collect_object_field_ids(operations) do
-    do_collect_object_field_ids(operations, [])
-  end
+  @spec flatten_selections([Blueprint.Document.Field.t] | Blueprint.Document.Field.t) :: [Blueprint.Document.Field.t]
+  defp flatten_selections([]), do: []
 
-  defp do_collect_object_field_ids([], acc), do: acc
-  defp do_collect_object_field_ids([next | rest], acc) do
-    ids =
-      next.selections
-      |> Enum.flat_map(&fields_for_selections/1)
+  defp flatten_selections([%Blueprint.Document.Field{} | _] = selections), do:
+    selections |> Enum.flat_map(&flatten_selections/1)
 
-    do_collect_object_field_ids(rest, ids ++ acc)
-  end
+  defp flatten_selections(%Blueprint.Document.Field{} = selection), do:
+    [selection | flatten_selections(selection.selections)]
 
-  defp fields_for_selections(%Blueprint.Document.Field{schema_node: %{type: %Type.List{of_type: type}}, selections: selections}) do
-    selections
-    |> Stream.flat_map(&fields_for_selections/1)
-    |> Enum.concat([type])
-  end
-  defp fields_for_selections(%Blueprint.Document.Field{schema_node: %{__reference__: %{identifier: id}}}) when not(is_nil(id)) do
-    [id]
+  @spec field_to_meta(Blueprint.Document.Field.t) :: Keyword.t
+  defp field_to_meta(%Blueprint.Document.Field{schema_node: %Absinthe.Type.Field{__private__: private}}) do
+    case Keyword.fetch(private, :meta) do
+      :error ->
+        []
+      {:ok, meta} ->
+        meta
+    end
   end
 
 end

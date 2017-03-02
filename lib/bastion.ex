@@ -36,9 +36,15 @@ defmodule Bastion do
   @bastion_metadata_key :scopes
 
   @spec extract_scopes(Bastion.ExtractMetadata.extracted_metadata) :: [scope]
-  defp extract_scopes({ _id, meta}) do
+  defp extract_scopes(meta) do
     meta
-    |> Map.get(@bastion_metadata_key)
+    |> Keyword.fetch(@bastion_metadata_key)
+    |> case do
+      :error ->
+        nil
+      {:ok, scopes} ->
+        scopes
+    end
     |> List.wrap()
   end
 

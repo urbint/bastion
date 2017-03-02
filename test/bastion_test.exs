@@ -9,21 +9,20 @@ defmodule BastionTest do
   defmodule TestSchema do
     use Absinthe.Schema
 
-    object :private_user do
-      meta :scopes, :admin
-
-      field :name, :string
-      field :id, :integer
-    end
-
-    object :public_user do
+    object :user do
       field :name, :string
       field :id, :integer
     end
 
     query do
-      field :private_users, list_of(:private_user), resolve: &resolver_fn/3
-      field :public_users, list_of(:public_user), resolve: &resolver_fn/3
+      field :private_users, list_of(:user) do
+        # TODO macro exposing `scopes :admin`
+        meta :scopes, :admin
+        resolve &resolver_fn/3
+      end
+      field :public_users, list_of(:user) do
+        resolve &resolver_fn/3
+      end
     end
 
     defp resolver_fn(_parent, _args, _blueprint) do
