@@ -28,6 +28,8 @@ defmodule Doorman.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    []
+    [
+      {:absinthe, "~> 1.2.0"}
+    ]
   end
 end
