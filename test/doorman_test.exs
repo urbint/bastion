@@ -4,22 +4,25 @@ defmodule DoormanTest do
 
   alias __MODULE__.TestSchema
 
+  import Doorman
+
   describe "sanity" do
     test "TestSchema module works as expected" do
       """
       query TestQuery {
-        all_planets {
+        users {
           name, id
         }
       }
-      """ |> Absinthe.run(TestSchema)
+      """
+      |> Absinthe.run(TestSchema)
       |> case do
            {:ok, result} ->
              assert result ==
                %{data:
-                 %{"all_planets" => [
-                   %{"id" => 7, "name" => "Mars"},
-                   %{"id" => 999999, "name" => "Dagobah"}
+                 %{"users" => [
+                   %{"id" => 7, "name" => "Luke Skywalker"},
+                   %{"id" => 999999, "name" => "Darth Vader"}
                  ]}
                 }
       end
@@ -27,7 +30,17 @@ defmodule DoormanTest do
   end
 
   describe "required_scopes/2" do
-    test "returns scopes specified by the schema metadata"
+    test "returns scopes specified by the schema and query request metadata" do
+      query = """
+        query TestQuery {
+          users {
+            name, id
+          }
+        }
+        """
+
+      assert required_scopes(TestSchema, query) == [:admin]
+    end
   end
 
 
@@ -36,20 +49,22 @@ defmodule DoormanTest do
 
     use Absinthe.Schema
 
-    object :planet do
+    object :user do
+      meta :doorman, :admin
       field :name, :string
       field :id, :integer
     end
 
+
     query do
-      field :all_planets, list_of(:planet),
+      field :users, list_of(:user),
         resolve: &resolver_fn/3
     end
 
     defp resolver_fn(_, _, _) do
       {:ok, [
-        %{id: 7, name: "Mars"},
-        %{id: 999999, name: "Dagobah"},
+        %{id: 7, name: "Luke Skywalker"},
+        %{id: 999999, name: "Darth Vader"},
       ]}
     end
 

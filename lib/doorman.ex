@@ -14,7 +14,9 @@ defmodule Doorman do
 
   """
   @spec required_scopes(Absinthe.Schema.t, query) :: [scope]
-  def required_scopes(_schema, _query) do
+  def required_scopes(schema, _query) do
+    IO.inspect schema
+
     []
   end
 
