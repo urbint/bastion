@@ -29,7 +29,8 @@ defmodule Bastion.Mixfile do
   # Type "mix help deps" for more examples and options
   defp deps do
     [
-      {:absinthe, "~> 1.2.0"}
+      {:absinthe, "~> 1.2.0"},
+      {:plug, "~> 1.2"},
     ]
   end
 end
