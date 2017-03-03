@@ -137,16 +137,16 @@ defmodule BastionTest do
 
     @tag query: :basic_private
     test "authorizes only properly scoped private queries", %{query: query} do
-      assert :ok         = authorize(BasicTestSchema, query, [:admin])
-      assert {:error, _} = authorize(BasicTestSchema, query, [:user])
-      assert {:error, _} = authorize(BasicTestSchema, query, [])
+      assert :ok           = authorize(BasicTestSchema, query, [:admin])
+      assert :unauthorized = authorize(BasicTestSchema, query, [:user])
+      assert :unauthorized = authorize(BasicTestSchema, query, [])
     end
 
     @tag query: :user_asking_for_secret
     test "authorizes only properly scoped sub-field queries", %{query: query} do
-      assert :ok         = authorize(BasicTestSchema, query, [:user])
-      assert {:error, _} = authorize(BasicTestSchema, query, [:admin])
-      assert {:error, _} = authorize(BasicTestSchema, query, [])
+      assert :ok           = authorize(BasicTestSchema, query, [:user])
+      assert :unauthorized = authorize(BasicTestSchema, query, [:admin])
+      assert :unauthorized = authorize(BasicTestSchema, query, [])
     end
   end
 

@@ -36,7 +36,6 @@ defmodule Bastion do
     end
   end
 
-
   @spec extract_scopes(Bastion.ExtractMetadata.extracted_metadata) :: [scope]
   defp extract_scopes(meta) do
     meta
@@ -85,7 +84,7 @@ defmodule Bastion do
   Otherwise, {:error, reason} is returned.
 
   """
-  @spec authorize(Schema.t, query, [scope]) :: :ok | {:error, reason :: String.t}
+  @spec authorize(Schema.t, query, [scope]) :: :ok | :unauthorized
   def authorize(schema, query, user_scopes) when is_list(user_scopes) do
     authorized? =
       required_scopes(schema, query)
@@ -103,7 +102,7 @@ defmodule Bastion do
         :ok
 
       false ->
-        {:error, "Not authorized to execute query."}
+        :unauthorized
     end
   end
 
@@ -114,7 +113,7 @@ defmodule Bastion do
   """
   defmacro scopes(req_scopes) do
     quote do
-      meta :'$bastion:scopes', unquote(req_scopes)
+      meta unquote(@bastion_metadata_key), unquote(req_scopes)
     end
   end
 end

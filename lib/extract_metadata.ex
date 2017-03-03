@@ -4,8 +4,7 @@ defmodule Bastion.ExtractMetadata do
 
   """
 
-
-  alias Absinthe.{Schema,Blueprint,Type}
+  alias Absinthe.Blueprint
 
   use Absinthe.Phase
 
@@ -16,9 +15,6 @@ defmodule Bastion.ExtractMetadata do
 
   @spec run(Blueprint.t, Keyword.t) :: {:ok, [extracted_metadata]}
   def run(blueprint, opts \\ []) do
-    schema =
-      Keyword.fetch!(opts, :schema)
-
     extracted =
       blueprint
       |> parse_selected_field_metadata()

@@ -30,7 +30,9 @@ defmodule Bastion.Mixfile do
   defp deps do
     [
       {:absinthe, "~> 1.2.0"},
+      {:absinthe_plug, "~> 1.2.5", only: [:test]},
       {:plug, "~> 1.2"},
+      {:poison, ">= 0.0.0", only: [:dev, :test]},
     ]
   end
 end

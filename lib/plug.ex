@@ -5,11 +5,38 @@ defmodule Bastion.Plug do
   """
 
   @behaviour Plug
-  # import Plug.Conn
+  import Plug.Conn
 
-  @spec init(opts :: Keyword.t) :: map
+  @type opts :: [
+    {:schema, Absinthe.Schema.t}
+  ]
+
+  @bastion_scopes_conn_key :'$bastion:authorized_scopes'
+
+
+  @doc """
+  Ensures the passed or globally set schema option is a valid `Absinthe.Schema.t`.
+
+  """
+  @spec init(opts) :: opts
   def init(opts \\ []) do
-    opts
+    schema =
+      get_schema(opts)
+
+    Keyword.update(opts, :schema, schema, fn _ -> schema end)
+  end
+
+  @spec get_schema(opts) :: Absinthe.Schema.t
+  defp get_schema(opts) do
+    default = Application.get_env(:absinthe, :schema)
+    schema = Keyword.get(opts, :schema, default)
+    try do
+      Absinthe.Schema.types(schema)
+    rescue
+      UndefinedFunctionError ->
+        raise ArgumentError, "The supplied schema: #{inspect schema} is not a valid Absinthe Schema"
+    end
+    schema
   end
 
 
@@ -18,8 +45,47 @@ defmodule Bastion.Plug do
   has access to the requested fields.
 
   """
-  def call(conn, _opts) do
-    conn
-    |> IO.inspect
+  @spec call(Plug.Conn.t, opts) :: Plug.Conn.t
+  def call(conn, opts) do
+    schema =
+      Keyword.fetch!(opts, :schema)
+
+    with {:ok, query} <- get_query(conn),
+         {:ok, scopes} when is_list(scopes) <- get_authorized_scopes(conn),
+          :ok         <- Bastion.authorize(schema, query, scopes) do
+      conn
+    else
+      :unauthorized ->
+        conn
+        |> send_resp(403, "Unauthorized")
+    end
   end
+
+  @spec get_query(Plug.Conn.t) :: {:ok, String.t} | no_return
+  defp get_query(%{body_params: %{"query" => query}}), do: {:ok, query}
+  defp get_query(%{params: %{"query" => query}}), do: {:ok, query}
+
+  @spec get_authorized_scopes(Plug.Conn.t) :: {:ok, [Bastion.scope]} | no_return
+  defp get_authorized_scopes(conn) do
+    if Map.has_key?(conn.assigns, @bastion_scopes_conn_key) do
+      scopes =
+        Map.get(conn.assigns, @bastion_scopes_conn_key)
+
+      {:ok, scopes}
+    else
+      raise "No Bastion scopes set on connection"
+    end
+  end
+
+
+  @doc """
+  Sets authorized scopes on a passed Conn string.
+
+  """
+  @spec set_authorized_scopes(Plug.Conn.t, [Bastion.scope]) :: Plug.Conn.t
+  def set_authorized_scopes(conn, scopes) do
+    conn
+    |> assign(@bastion_scopes_conn_key, scopes)
+  end
+
 end
