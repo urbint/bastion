@@ -63,3 +63,18 @@ In your router:
       plug Bastion.Plug, schema: MyAbsintheSchema
       plug Absinthe.Plug, schema: MyAbsintheSchema
     end
+
+
+## Rejecting all requests
+
+This is effectively an authorization middleware,
+and so its opinion leans toward rejecting requests more quickly than not.
+
+If you do not set the authorized scopes on the connection with a call to `Bastion.Plug.set_authorized_scopes/2`
+BEFORE calling `plug Bastion.Plug` in your router,
+ALL of the requests will be rejected.
+
+If you're getting started with Bastion,
+you can write a simple plug function to set the authorized scopes to an empty list,
+as exemplified in the readme.
+

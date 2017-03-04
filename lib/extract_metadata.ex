@@ -14,7 +14,7 @@ defmodule Bastion.ExtractMetadata do
   @type extracted_metadata :: {id, metadata}
 
   @spec run(Blueprint.t, Keyword.t) :: {:ok, [extracted_metadata]}
-  def run(blueprint, opts \\ []) do
+  def run(blueprint, _opts \\ []) do
     extracted =
       blueprint
       |> parse_selected_field_metadata()

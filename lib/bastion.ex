@@ -107,7 +107,7 @@ defmodule Bastion do
       {:ok, result, _phases} ->
         {:ok, result}
 
-      {:error, %{phase: Absinthe.Phase.Parse}, _phases} = err ->
+      {:error, %{phase: Absinthe.Phase.Parse}, _phases} ->
         {:error, :parse_failed}
     end
   end

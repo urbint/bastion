@@ -89,11 +89,17 @@ defmodule Bastion.Plug do
   @doc """
   Sets authorized scopes on a passed Conn string.
 
+  MUST be called before `plug Bastion.Plug` in a Plug router.
+  Otherwise all requests will be rejected.
+
+  If called with nil, it will set the authorized_scopes to an empty list.
+
   """
   @spec set_authorized_scopes(Plug.Conn.t, [Bastion.scope]) :: Plug.Conn.t
-  def set_authorized_scopes(conn, scopes) do
-    conn
-    |> assign(@bastion_scopes_conn_key, scopes)
+  def set_authorized_scopes(conn, scopes) when is_list(scopes) do
+    conn |> assign(@bastion_scopes_conn_key, scopes)
   end
+  def set_authorized_scopes(conn, nil), do: set_authorized_scopes(conn, [])
+
 
 end
