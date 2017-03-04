@@ -12,11 +12,6 @@ def deps do
 end
 ```
 
-Documentation can be generated with [ExDoc](https://github.com/elixir-lang/ex_doc)
-and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
-be found at [https://hexdocs.pm/bastion](https://hexdocs.pm/bastion).
-
-
 ## Overview ([from Bastion main @moduledoc](https://github.com/urbint/bastion/blob/master/lib/bastion.ex))
 
 Bastion allows you to specify scopes in your Absinthe GraphQL Schemas,
