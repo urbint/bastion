@@ -17,7 +17,7 @@ and published on [HexDocs](https://hexdocs.pm). Once published, the docs can
 be found at [https://hexdocs.pm/bastion](https://hexdocs.pm/bastion).
 
 
-## Module doc from [Bastion main file](https://github.com/urbint/bastion/blob/master/lib/bastion.ex)
+## Overview ([from Bastion main @moduledoc](https://github.com/urbint/bastion/blob/master/lib/bastion.ex))
 
 Bastion allows you to specify scopes in your Absinthe GraphQL Schemas,
 and then authorize requests only on requested fields.
@@ -30,43 +30,39 @@ To use Bastion, you need to:
 
 Bastion will reject requests to scoped fields that the user does not have an authorized scope for.
 
-Notably, the request is rejected only if a scoped field is included - requests for non projected fields will pass through.
+Notably, the request is rejected only if a scoped field is included - requests for non protected fields will pass through.
 
 ## Example Usage
 
 In your Absinthe.Schema:
 
-  defmodule MyAbsintheSchema do
-    use Absinthe.Schema
-    use Bastion
+    defmodule MyAbsintheSchema do
+      use Absinthe.Schema
+      use Bastion
 
-    query do
-      field :users, list_of(:user) do
-        scopes :admin
+      query do
+        field :users, list_of(:user) do
+          scopes [:admin]
+        end
       end
 
-      field :users, list_of(:user) do
-        scopes :admin
+      object :user do
+        field :name, :string
       end
     end
-
-    object :user do
-      field :name, :string
-    end
-  end
 
 In your router:
 
-  defmodule MyRouter do
-    use Plug
+    defmodule MyRouter do
+      use Plug
 
-    plug :set_scopes
+      plug :set_scopes
 
-    defp set_scopes(conn, _opts) do
-      # get authorized scopes from your own user or domain logic
-      Bastion.Plug.set_authorized_scopes(conn, [:admin])
+      defp set_scopes(conn, _opts) do
+        # get authorized scopes from your own user or domain logic
+        Bastion.Plug.set_authorized_scopes(conn, [:admin])
+      end
+
+      plug Bastion.Plug, schema: MyAbsintheSchema
+      plug Absinthe.Plug, schema: MyAbsintheSchema
     end
-
-    plug Bastion.Plug, schema: MyAbsintheSchema
-    plug Absinthe.Plug, schema: MyAbsintheSchema
-  end
