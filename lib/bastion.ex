@@ -17,36 +17,36 @@ defmodule Bastion do
 
   In your Absinthe.Schema:
 
-    defmodule MyAbsintheSchema do
-      use Absinthe.Schema
-      use Bastion
+      defmodule MyAbsintheSchema do
+        use Absinthe.Schema
+        use Bastion
 
-      query do
-        field :users, list_of(:user) do
-          scopes [:admin]
+        query do
+          field :users, list_of(:user) do
+            scopes [:admin]
+          end
+        end
+
+        object :user do
+          field :name, :string
         end
       end
 
-      object :user do
-        field :name, :string
-      end
-    end
-
   In your router:
 
-    defmodule MyRouter do
-      use Plug
+      defmodule MyRouter do
+        use Plug
 
-      plug :set_scopes
+        plug :set_scopes
 
-      defp set_scopes(conn, _opts) do
-        # get authorized scopes from your own user or domain logic
-        Bastion.Plug.set_authorized_scopes(conn, [:admin])
+        defp set_scopes(conn, _opts) do
+          # get authorized scopes from your own user or domain logic
+          Bastion.Plug.set_authorized_scopes(conn, [:admin])
+        end
+
+        plug Bastion.Plug, schema: MyAbsintheSchema
+        plug Absinthe.Plug, schema: MyAbsintheSchema
       end
-
-      plug Bastion.Plug, schema: MyAbsintheSchema
-      plug Absinthe.Plug, schema: MyAbsintheSchema
-    end
 
 
   """
@@ -158,11 +158,11 @@ defmodule Bastion do
 
   ## Usage
 
-    query do
-      field :my_secret_query, :secret, description: "" do
-        scopes :admin_priviledges
+      query do
+        field :my_secret_query, :secret, description: "" do
+          scopes :admin_priviledges
+        end
       end
-    end
 
   """
   defmacro scopes(req_scopes) do
