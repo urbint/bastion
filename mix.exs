@@ -5,9 +5,21 @@ defmodule Bastion.Mixfile do
     [app: :bastion,
      version: "0.1.0",
      elixir: "~> 1.4",
+     description: description(),
+     maintainers: ["Ryan Schmukler", "Russell Matney", "William Carroll"],
+     licenses: ["MIT"],
+     links: %{
+       github: "https://github.com/urbint/bastion",
+     },
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps()]
+  end
+
+  defp description() do
+    """
+    Bastion provides scope authorization for Absinthe GraphQL Schemas on a per-field basis.
+    """
   end
 
   # Configuration for the OTP application
