@@ -1,6 +1,25 @@
 defmodule Bastion do
   @moduledoc """
-  Bastion uses metadata from your GraphQL Schema to authorize requests.
+  Bastion allows you to specify scopes in your Absinthe GraphQL Schemas,
+  and then authorize requests only on requested fields.
+
+  ## Usage
+
+    defmodule MyAbsintheSchema do
+      use Absinthe.Schema
+      use Bastion
+
+      query do
+        field :users, list_of(:user) do
+          scopes :admin
+        end
+      end
+
+      object :user do
+        field :name, :string
+      end
+    end
+
 
   """
 
@@ -17,22 +36,21 @@ defmodule Bastion do
   and returns the scopes required to run that query.
 
   """
-  @spec required_scopes(Schema.t, query) :: {:ok, [scope]} | :no_scopes_required
+  @spec required_scopes(Schema.t, query) :: {:ok, [scope]} | :no_scopes_required | {:error, :parse_failed}
   def required_scopes(schema, query) do
-    {:ok, metadata} =
-      metadata_for_requested_fields(schema, query)
+    with {:ok, metadata} <- metadata_for_requested_fields(schema, query) do
+      scopes =
+        metadata
+        |> Stream.flat_map(&extract_scopes/1)
+        |> Enum.uniq()
 
-    scopes =
-      metadata
-      |> Stream.flat_map(&extract_scopes/1)
-      |> Enum.uniq()
+      case scopes do
+        [] ->
+          :no_scopes_required
 
-    case scopes do
-      [] ->
-        :no_scopes_required
-
-      scopes ->
-        {:ok, scopes}
+        scopes ->
+          {:ok, scopes}
+      end
     end
   end
 
@@ -50,7 +68,7 @@ defmodule Bastion do
     |> List.wrap()
   end
 
-  @spec metadata_for_requested_fields(Schema.t, query) :: {:ok, Bastion.ExtractMetadata.extracted_metadata}
+  @spec metadata_for_requested_fields(Schema.t, query) :: {:ok, Bastion.ExtractMetadata.extracted_metadata} | {:error, :parse_failed}
   defp metadata_for_requested_fields(schema, query) do
     pipeline =
       metadata_pipeline(schema)
@@ -60,6 +78,9 @@ defmodule Bastion do
     |> case do
       {:ok, result, _phases} ->
         {:ok, result}
+
+      {:error, %{phase: Absinthe.Phase.Parse}, _phases} = err ->
+        {:error, :parse_failed}
     end
   end
 
@@ -84,31 +105,36 @@ defmodule Bastion do
   Otherwise, {:error, reason} is returned.
 
   """
-  @spec authorize(Schema.t, query, [scope]) :: :ok | :unauthorized
+  @spec authorize(Schema.t, query, [scope]) :: {:ok, authorized? :: boolean} | {:error, :parse_failed}
   def authorize(schema, query, user_scopes) when is_list(user_scopes) do
-    authorized? =
-      required_scopes(schema, query)
-      |> case do
-        {:ok, scopes} ->
+    required_scopes(schema, query)
+    |> case do
+      {:ok, scopes} ->
+        authorized? =
           scopes
           |> Enum.all?(&(&1 in user_scopes))
 
-        :no_scopes_required ->
-          true
-      end
+        {:ok, authorized?}
 
-    case authorized? do
-      true ->
-        :ok
+      :no_scopes_required ->
+        {:ok, true}
 
-      false ->
-        :unauthorized
+      {:error, :parse_failed} = err ->
+        err
     end
   end
 
 
   @doc """
   Allows a module to set scopes as a meta object on fields with no fuss.
+
+  ## Usage
+
+    query do
+      field :my_secret_query, :secret, description: "" do
+        scopes :admin_priviledges
+      end
+    end
 
   """
   defmacro scopes(req_scopes) do

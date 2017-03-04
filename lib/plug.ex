@@ -50,14 +50,22 @@ defmodule Bastion.Plug do
     schema =
       Keyword.fetch!(opts, :schema)
 
-    with {:ok, query} <- get_query(conn),
+    with {:ok, query}  <- get_query(conn),
          {:ok, scopes} when is_list(scopes) <- get_authorized_scopes(conn),
-          :ok         <- Bastion.authorize(schema, query, scopes) do
+         {:ok, true}   <- Bastion.authorize(schema, query, scopes) do
       conn
     else
-      :unauthorized ->
+      {:ok, false} ->
         conn
-        |> send_resp(403, "Unauthorized")
+        |> put_resp_content_type("application/json")
+        |> send_resp(403, Poison.encode!(%{errors: [%{message: "Unauthorized"}]}))
+        |> halt()
+
+      {:error, :parse_failed} ->
+        conn
+        |> put_resp_content_type("application/json")
+        |> send_resp(400, Poison.encode!(%{errors: [%{message: "Invalid query"}]}))
+        |> halt()
     end
   end
 

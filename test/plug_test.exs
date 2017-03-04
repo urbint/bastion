@@ -30,10 +30,16 @@ defmodule Bastion.PlugTest do
   describe "for unscoped users" do
     test "rejects unauthorized requests to secrets" do
       for conn <- supported_calls_with_query(@secrets_query) do
-        passed_conn =
+        conn =
           Bastion.Plug.call(conn, @opts)
 
-        assert %{status: 403} = passed_conn
+        assert conn.status == 403
+        assert conn.halted == true
+        assert conn.state == :sent
+
+        assert Poison.decode!(conn.resp_body) == %{
+          "errors" => [%{"message" => "Unauthorized"}]
+        }
       end
     end
 
@@ -53,6 +59,21 @@ defmodule Bastion.PlugTest do
           Bastion.Plug.call(conn, @opts)
 
         assert conn == passed_conn
+      end
+    end
+
+    test "rejects invalid queries" do
+      for conn <- supported_calls_with_query("invalid}") do
+        conn =
+          Bastion.Plug.call(conn, @opts)
+
+        assert conn.halted == true
+        assert conn.state == :sent
+        assert conn.status == 400
+
+        assert Poison.decode!(conn.resp_body) == %{
+          "errors" => [%{"message" => "Invalid query"}]
+        }
       end
     end
   end
