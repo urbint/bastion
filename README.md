@@ -9,7 +9,7 @@ Bastion can be installed by adding `bastion` to your list of dependencies in `mi
 ```elixir
 def deps do
   [
-    {:bastion, "~> 0.1.0"}
+    {:bastion, "~> 0.1.0"},
   ]
 end
 ```
