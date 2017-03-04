@@ -5,15 +5,21 @@ defmodule Bastion.Mixfile do
     [app: :bastion,
      version: "0.1.0",
      elixir: "~> 1.4",
-     description: description(),
-     maintainers: ["Ryan Schmukler", "Russell Matney", "William Carroll"],
-     licenses: ["MIT"],
-     links: %{
-       github: "https://github.com/urbint/bastion",
-     },
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     package: package(),
      deps: deps()]
+  end
+
+  defp package() do
+    [
+      description: description(),
+      maintainers: ["Ryan Schmukler", "Russell Matney", "William Carroll"],
+      licenses: ["MIT"],
+      links: %{
+        github: "https://github.com/urbint/bastion",
+      }
+    ]
   end
 
   defp description() do
@@ -47,4 +53,5 @@ defmodule Bastion.Mixfile do
       {:poison, ">= 0.0.0", only: [:dev, :test]},
     ]
   end
+
 end
