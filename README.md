@@ -1,5 +1,7 @@
 # Bastion
 
+[![Hex pm](http://img.shields.io/hexpm/v/bastion.svg?style=flat)](https://hex.pm/packages/bastion)
+
 ## Installation
 
 Bastion can be installed by adding `bastion` to your list of dependencies in `mix.exs`:
