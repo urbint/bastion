@@ -51,6 +51,7 @@ defmodule Bastion.Mixfile do
       {:absinthe_plug, "~> 1.2.5", only: [:test]},
       {:plug, "~> 1.2"},
       {:poison, ">= 0.0.0", only: [:dev, :test]},
+      {:ex_doc, "~> 0.14", only: :dev}
     ]
   end
 
